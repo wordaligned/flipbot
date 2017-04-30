@@ -3,7 +3,7 @@
 import configparser
 import io
 import os
-from pprint import pprint
+import random
 import sys
 import time
 
@@ -17,6 +17,11 @@ config = configparser.ConfigParser()
 config.read('settings.ini')
 TOKEN = config['SETTINGS']['TOKEN']
 USER = config['SETTINGS']['USER']
+
+def reaction():
+    '''Return a reaction (emoji)'''
+    return random.choice(
+        'upside_down_face umbrella flag-au arrows_counterclockwise'.split())
 
 def flip_text(s):
     '''Flip latin characters in s to create an "upside-down" impression.'''
@@ -83,16 +88,15 @@ def react(client, msg):
     client.api_call('reactions.add',
                     channel=msg['channel'],
                     timestamp=msg['ts'],
-                    name='umbrella')
+                    name=reaction())
 
 def handle(client, messages):
     '''Respond to a list of messages.'''
     for msg in messages:
         try:
             if msg.get('user') == USER:
-                pass
+                pass # Don't reprocess our own messages!
             else:
-                pprint(msg)
                 if is_image_message(msg):
                     flip_image_message(client, msg)
                     react(client, msg)
