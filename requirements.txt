@@ -1,3 +1,4 @@
+Pillow
+pytest
 slackclient
 upsidedown>=0.4
-Pillow

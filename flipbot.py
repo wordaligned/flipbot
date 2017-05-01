@@ -2,8 +2,10 @@
 
 import configparser
 import io
+import json
 import os
 import random
+import re
 import sys
 import time
 
@@ -15,8 +17,10 @@ import upsidedown
 # Read Slack API token and the bot user name from settings.ini
 config = configparser.ConfigParser()
 config.read('settings.ini')
+
 TOKEN = config['SETTINGS']['TOKEN']
 USER = config['SETTINGS']['USER']
+WEBHOOK = config['SETTINGS']['WEBHOOK']
 
 def reaction():
     '''Return a reaction (emoji)'''
@@ -26,6 +30,32 @@ def reaction():
 def flip_text(s):
     '''Flip latin characters in s to create an "upside-down" impression.'''
     return upsidedown.transform(s)
+
+def echo_text(s):
+    '''Returns the text, unmodified'''
+    return s
+
+link_re = re.compile('<(https?://[^|>]*)(\|?)([^>]*)>')
+
+def flip_links(s, flip_fn=flip_text, echo_fn=echo_text):
+    '''Handles links in the message, s.
+    
+    See: https://api.slack.com/docs/message-formatting#linking_to_urls
+       
+
+    Any URL in s will look something like <http://www.foo.com|www.foo.com>
+    We keep the link functional by flipping the text following the pipe,
+    (www.foo.com) and keeping the text before the pipe unchanged.
+    '''
+    def repl(m):
+        return '<{}{}{}>'.format(
+            echo_fn(m.group(1)), m.group(2), flip_fn(m.group(3)))
+    flipped = ''
+    pos = 0
+    for m in link_re.finditer(s):
+        flipped += flip_fn(s[pos:m.start()]) + repl(m)
+        pos = m.end()
+    return flipped + flip_fn(s[pos:])
 
 def is_text_message(msg):
     '''Return True if the message is simple text.'''
@@ -39,9 +69,10 @@ def is_image_message(msg):
 
 def flip_text_message(client, msg):
     '''Respond to the text message by posting a flipped version.'''
+    text = msg['text']
     client.api_call('chat.postMessage',
-                    text=flip_text(msg['text']),
                     channel=msg['channel'],
+                    text=flip_links(text),
                     as_user=True)
 
 def flip_file_metadata(f):
@@ -52,7 +83,7 @@ def flip_file_metadata(f):
     if title:
         meta['title'] = flip_text(title)
     if comment:
-        meta['initial_comment'] = flip_text(comment)
+        meta['initial_comment'] = flip_links(comment)
     return meta
 
 def flip_image(img_bytes):
