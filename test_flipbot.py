@@ -20,9 +20,10 @@ def test_link_matcher():
     assert m.group(3) == 'flip.it'
 
 def test_link_flipper():
-    flip_fn = str.lower
+    flip_fn = lambda s: s[::-1]
     echo_fn = str.upper
 
-    assert (flipbot.flip_links('FLIP it! <https://flip.it|Flip.It> Good',
-                               flip_fn, echo_fn)
-            == 'flip it! <HTTPS://FLIP.IT|flip.it> good')
+    assert (flipbot.flip_text_with_links(
+        'FLIP it! <https://flip.it|Flip.It> Good',
+        flip_fn, echo_fn)
+            == 'dooG <HTTPS://FLIP.IT|tI.pilF> !ti PILF')

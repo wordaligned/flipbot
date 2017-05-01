@@ -4,6 +4,7 @@ import configparser
 import io
 import json
 import os
+import pprint
 import random
 import re
 import sys
@@ -20,7 +21,6 @@ config.read('settings.ini')
 
 TOKEN = config['SETTINGS']['TOKEN']
 USER = config['SETTINGS']['USER']
-WEBHOOK = config['SETTINGS']['WEBHOOK']
 
 def reaction():
     '''Return a reaction (emoji)'''
@@ -37,7 +37,7 @@ def echo_text(s):
 
 link_re = re.compile('<(https?://[^|>]*)(\|?)([^>]*)>')
 
-def flip_links(s, flip_fn=flip_text, echo_fn=echo_text):
+def flip_text_with_links(s, flip_fn=flip_text, echo_fn=echo_text):
     '''Handles links in the message, s.
     
     See: https://api.slack.com/docs/message-formatting#linking_to_urls
@@ -50,12 +50,16 @@ def flip_links(s, flip_fn=flip_text, echo_fn=echo_text):
     def repl(m):
         return '<{}{}{}>'.format(
             echo_fn(m.group(1)), m.group(2), flip_fn(m.group(3)))
-    flipped = ''
+
+    chunks = []
     pos = 0
     for m in link_re.finditer(s):
-        flipped += flip_fn(s[pos:m.start()]) + repl(m)
+        chunks.append(flip_fn(s[pos:m.start()]))
+        chunks.append(repl(m))
         pos = m.end()
-    return flipped + flip_fn(s[pos:])
+    chunks.append(flip_fn(s[pos:]))
+
+    return ''.join(reversed(chunks))
 
 def is_text_message(msg):
     '''Return True if the message is simple text.'''
@@ -72,7 +76,7 @@ def flip_text_message(client, msg):
     text = msg['text']
     client.api_call('chat.postMessage',
                     channel=msg['channel'],
-                    text=flip_links(text),
+                    text=flip_text_with_links(text),
                     as_user=True)
 
 def flip_file_metadata(f):
