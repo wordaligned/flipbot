@@ -9,7 +9,6 @@ import io
 import json
 import os
 import pprint
-import random
 import re
 import sys
 import time
@@ -18,6 +17,8 @@ from PIL import Image
 import requests
 import slackclient
 import upsidedown
+
+import  emoji
 
 # Read Slack API token and the bot user name from settings.ini
 config = configparser.ConfigParser()
@@ -114,8 +115,7 @@ def is_user_change(msg):
 
 def reaction():
     '''Return a reaction (emoji)'''
-    return random.choice(
-        'upside_down_face umbrella flag-au arrows_counterclockwise'.split())
+    return emoji.wrong_way_up()
 
 # https://api.slack.com/docs/message-formatting#how_to_display_formatted_messages
 markup_re = re.compile(
@@ -148,9 +148,7 @@ class FlipMarkedupText:
 
     def emoji(self, s):
         '''Flips an emoji.'''
-        if '_face' in s:
-            return ':upside_down_face:'
-        return s
+        return emoji.flip(s)
 
     def link(self, url, s):
         '''Flips a link, keeping the target unchanged.'''
